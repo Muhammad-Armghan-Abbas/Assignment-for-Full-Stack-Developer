@@ -1,36 +1,47 @@
 # Ajaia Docs
 
-A lightweight collaborative document editor: create and format documents, import files, share with teammates as editors or viewers, and pick up each other's changes.
+A collaborative document editor: write with rich formatting and images, share with editors, commenters or viewers, discuss in comment threads anchored to text, see who else is in the document, and roll back to any earlier version.
 
-**Live demo:** _<add Vercel URL>_ · **Walkthrough video:** see [`VIDEO_URL.txt`](VIDEO_URL.txt)
+**Live demo:** https://ajaia-docs-gilt-xi.vercel.app · **Walkthrough video:** see [`VIDEO_URL.txt`](VIDEO_URL.txt)
 
-![Editor](docs/screenshots/02-editor.png)
+![Editor](docs/screenshots/06-welcome-editor.png)
 
 ## Demo accounts
 
-Sign-in is mocked: choose an account on the login page (no password).
+Sign-in is mocked: choose an account on the login page (no password). Open a second browser or a private window to be two people at once.
 
 | User | Email | Seeded state |
 |---|---|---|
-| Alice Tan | alice@ajaia.test | Owns "Welcome to Ajaia Docs" |
-| Bob Lim | bob@ajaia.test | Has **edit** access to Alice's welcome doc |
-| Carol Ng | carol@ajaia.test | Nothing shared yet — use her to test sharing |
-
-To test sharing, open two browsers (or one normal + one private window) and sign in as different users. "Switch user" in the top right returns to the account picker.
+| Alice Tan | alice@ajaia.test | Owns **Welcome to Ajaia Docs** · **commenter** on Bob's Q4 Launch Plan |
+| Bob Lim | bob@ajaia.test | Owns **Q4 Launch Plan** (with a comment thread) · **editor** on Alice's welcome doc |
+| Carol Ng | carol@ajaia.test | **Viewer** on the launch plan — use her to try sharing |
 
 ## Features
 
-- **Documents:** create, rename (click the title), edit, delete (owner only). Autosaves ~1 s after you stop typing; `Ctrl/Cmd+S` saves immediately. Save status is always visible.
-- **Rich text:** bold, italic, underline, strikethrough, Heading 1–3, bulleted and numbered lists, quotes, undo/redo, clear formatting. Standard keyboard shortcuts and Markdown shortcuts (`# `, `- `, `1. `) work.
-- **File import:** upload a **`.txt`, `.md` or `.docx`** file (max 4 MB) to create a new editable document. Headings, emphasis and lists are preserved. Other file types are rejected with a clear message.
-- **Sharing:** owners share by email as **Can edit** or **Can view**, change roles, or remove access. The documents page separates **My documents** from **Shared with me**, with owner and role badges.
-- **Access control** enforced on the server: viewers get a read-only editor and the API refuses their writes; people without access get a 404.
-- **Collaboration safety:** concurrent edits never silently overwrite each other (version check → "Load their version / Keep mine"). Open documents pick up collaborators' saved changes within ~5 s.
-- **Export:** Markdown, HTML, or Print → Save as PDF.
+**Editing**
+- Create from blank or a template (meeting notes, project brief, retro), rename, autosave (~1 s after typing stops, `Ctrl/Cmd+S` to force), delete (owner).
+- Bold, italic, underline, strikethrough, text colour, highlight, font size, Heading 1–3, alignment, bulleted / numbered lists, checklists, quotes, code blocks, dividers, links (`Ctrl/Cmd+K`).
+- **Tables** with a contextual toolbar (add/remove rows and columns, header row, merge/split, resizable columns).
+- **Images**: toolbar button, paste, or drag-and-drop; resizable from the corners. PNG, JPEG, GIF, WebP up to 3 MB.
+- **`/` command menu** for inserting any block from the keyboard, a selection toolbar, a live **outline** of headings, and word/character counts.
+
+**Files**
+- Import **`.txt`, `.md` or `.docx`** (max 4 MB) as a new document. Headings, emphasis, lists — and **images embedded in Word files** — are preserved. Other types are rejected with a clear message.
+- Download as Markdown, HTML, or Print → PDF.
+
+**Collaboration**
+- Share by email as **Editor**, **Commenter** or **Viewer**; change roles or remove access. The documents page separates **My documents** from **Shared with me**, with search, sort, role badges and preview cards.
+- **Comments**: select text → comment. Threads with replies, resolve/reopen, delete; highlights in the text follow edits, and a thread is marked "text changed" if its passage is edited away.
+- **Version history**: each editing session is a version (who, when, word count). Preview any version and restore it — restoring adds a new version, so nothing is lost.
+- **Presence**: avatars of who's in the document and who's actively editing; collaborators' saved changes and new comments appear within ~4 s.
+- **Conflict safety**: simultaneous saves never silently overwrite each other (version check → "Load their version / Keep mine").
+- **Activity feed** on the home page: shares, comments, edits, restores across your documents.
+
+All permissions are enforced on the server. People without access get a 404, including for image URLs.
 
 ## Run locally
 
-Requires Node.js 22 (22.12 or newer).
+Requires **Node.js 22** (22.12 or newer).
 
 ```bash
 npm install
@@ -38,62 +49,59 @@ cp .env.example .env.local   # optional — defaults work for local dev
 npm run dev                  # http://localhost:3000
 ```
 
-Data is stored in a SQLite file at `data/app.db`, created and seeded automatically on first request. Delete that file to reset to the seeded state.
+Data lives in a SQLite file at `data/app.db`, created, migrated and seeded on first request. Delete it to reset to the demo state.
 
 ### Tests
 
 ```bash
-npm test             # unit/integration tests (Vitest, in-memory SQLite) — ~1 s
-npm run test:e2e     # browser end-to-end tests (Playwright) — builds and starts the app on :3100
+npm test             # 30 unit/integration tests (Vitest, in-memory SQLite), ~2 s
+npm run test:e2e     # 6 browser tests (Playwright) against a production build on :3100
 npm run typecheck
 ```
 
-`npm run test:e2e` needs a Chromium for Playwright: run `npx playwright install chromium` once, or set `PW_CHROMIUM_PATH` to an existing Chromium binary.
+`npm run test:e2e` needs Chromium: run `npx playwright install chromium` once, or set `PW_CHROMIUM_PATH` to an existing binary.
 
-What the tests cover:
-
-- `tests/documents.test.ts` — create/rename/edit/reopen with formatting intact, HTML sanitisation, validation, stale-version conflicts, owned vs shared listing, 404 for non-shared users, editor vs viewer permissions, re-sharing, unsharing, delete.
-- `tests/import.test.ts` — `.txt`, `.md` and a real generated `.docx` converted to editor HTML; script stripping; unsupported/empty/corrupt file errors.
-- `e2e/core-flow.spec.ts` — full browser flow: Alice creates and formats a doc → reload persists it → shares with Carol as viewer → Carol sees it under "Shared with me", read-only → Alice's next edit appears in Carol's open tab. Plus Markdown import and a rejected upload.
+| File | Covers |
+|---|---|
+| `tests/documents.test.ts` | CRUD, formatting round-trip, validation, stale-version conflicts, owned vs shared listing, 404 for non-shared users, editor/viewer permissions, re-share, unshare, delete |
+| `tests/collaboration.test.ts` | Commenter role, comment threads & resolve rules, version grouping & restore, image upload/serve permissions and magic-byte checks, sanitizer allow-list, presence, activity scoping, cascade delete, **upgrading a database from the first release's schema** |
+| `tests/import.test.ts` | `.txt`, `.md`, generated `.docx`, a real Word file with an embedded image, script stripping, error cases |
+| `e2e/core-flow.spec.ts` | Two- and three-user browser flows: create/format/reload/share/view-only/live update/presence · slash menu, tables, checklists, image upload + access check · commenter comments → owner replies & resolves · history preview & restore propagating to another editor · Markdown import · rejected upload |
 
 ## Deploy (free: Vercel + Turso)
 
-The app uses libSQL, so the same code talks to a local SQLite file in development and a hosted [Turso](https://turso.tech) database (free tier, SQLite-compatible) in production. Vercel's filesystem is ephemeral, so a hosted database is required there.
+libSQL means the same code talks to a local SQLite file in development and a hosted [Turso](https://turso.tech) database (free tier) in production.
 
-1. **Create the database** (Turso dashboard, or CLI):
-   ```bash
-   turso db create ajaia-docs
-   turso db show ajaia-docs --url      # → libsql://ajaia-docs-<you>.turso.io
-   turso db tokens create ajaia-docs   # → auth token
-   ```
-2. **Import the repo in Vercel** (New Project → select the GitHub repo; framework is auto-detected).
-3. **Set environment variables:**
+1. **Database:** create a Turso database, copy its `libsql://…` URL and create a token (Read & Write, no expiry).
+2. **Vercel:** import the GitHub repo (Next.js is auto-detected). Node version comes from `package.json` (22.x).
+3. **Environment variables:**
+
    | Name | Value |
    |---|---|
-   | `DATABASE_URL` | the `libsql://…` URL |
-   | `DATABASE_AUTH_TOKEN` | the token |
-   | `SESSION_SECRET` | any long random string (e.g. `openssl rand -hex 32`) |
-4. **Deploy.** Tables and demo users are created automatically on the first request.
+   | `DATABASE_URL` | `libsql://<db>-<org>.turso.io` |
+   | `DATABASE_AUTH_TOKEN` | the Turso token |
+   | `SESSION_SECRET` | a long random string |
 
-If `DATABASE_URL` is missing on Vercel the app still boots, using a temporary SQLite file in `/tmp` — fine for a smoke test, but data won't persist between instances.
+4. **Deploy.** Migrations and demo data run automatically on first request. An existing database from an earlier release is upgraded in place.
 
 ## Project layout
 
 ```
 src/
-  app/                 Next.js App Router pages + API routes (thin: auth → service → JSON)
-    api/documents/…    CRUD, sharing
-    api/import/        file upload → new document
-    api/session/       mock sign-in / sign-out
-  components/          Editor, toolbar, share dialog, documents home
-  lib/
-    documents.ts       domain logic + access control (all rules live here)
-    import.ts          .txt/.md/.docx → sanitised HTML
-    sanitize.ts        HTML allow-list
-    db.ts              libSQL client, schema, seed
-    auth.ts            signed-cookie mock auth
-tests/                 Vitest
-e2e/                   Playwright
+  app/                    pages + API routes (thin: auth → service → JSON)
+    api/documents/[id]/   CRUD · shares · comments · versions · assets · sync
+    api/assets/[id]       access-checked image serving
+    api/import · activity · session · users
+  components/
+    editor/               DocumentEditor (save queue, sync), Toolbar, SelectionMenu, slash menu,
+                          comment highlights, Comments/History/Outline panels, Share dialog
+    home/                 documents page, cards, templates, activity feed
+    ui/                   avatars, menus, toasts, logo
+  lib/                    domain logic — every rule lives here and is unit-tested
+    access.ts             role → permission matrix (single source of truth)
+    documents.ts · comments.ts · versions.ts · assets.ts · presence.ts · activity.ts
+    import.ts · sanitize.ts · db.ts (migrations) · seed.ts · auth.ts
+tests/  e2e/  docs/screenshots/
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions and trade-offs, and [AI_WORKFLOW.md](AI_WORKFLOW.md) for how AI was used.

@@ -1,6 +1,7 @@
-import { createClient, type Client } from "@libsql/client";
+import { createClient, type Client, type InStatement } from "@libsql/client";
 import fs from "node:fs";
 import path from "node:path";
+import { seed } from "./seed";
 
 /**
  * One libSQL client for the whole app.
@@ -10,78 +11,148 @@ import path from "node:path";
 
 export type Db = Client;
 
-const SCHEMA = [
-  `CREATE TABLE IF NOT EXISTS users (
-     id    TEXT PRIMARY KEY,
-     email TEXT NOT NULL UNIQUE,
-     name  TEXT NOT NULL,
-     color TEXT NOT NULL
-   )`,
-  `CREATE TABLE IF NOT EXISTS documents (
-     id         TEXT PRIMARY KEY,
-     owner_id   TEXT NOT NULL REFERENCES users(id),
-     title      TEXT NOT NULL,
-     content    TEXT NOT NULL DEFAULT '',
-     version    INTEGER NOT NULL DEFAULT 1,
-     created_at TEXT NOT NULL,
-     updated_at TEXT NOT NULL
-   )`,
-  `CREATE INDEX IF NOT EXISTS idx_documents_owner ON documents(owner_id)`,
-  `CREATE TABLE IF NOT EXISTS document_shares (
-     document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-     user_id     TEXT NOT NULL REFERENCES users(id),
-     role        TEXT NOT NULL CHECK (role IN ('viewer', 'editor')),
-     created_at  TEXT NOT NULL,
-     PRIMARY KEY (document_id, user_id)
-   )`,
-  `CREATE INDEX IF NOT EXISTS idx_shares_user ON document_shares(user_id)`,
+interface Migration {
+  id: number;
+  name: string;
+  /** Statements run in a single write transaction. */
+  up: (db: Db) => Promise<InStatement[]>;
+}
+
+/**
+ * Forward-only migrations. Each runs once, inside a transaction, and is recorded
+ * in schema_migrations. Databases created by the first release (which had no
+ * migrations table) are upgraded in place — migration 1 is all IF NOT EXISTS.
+ */
+const MIGRATIONS: Migration[] = [
+  {
+    id: 1,
+    name: "initial schema",
+    up: async () => [
+      `CREATE TABLE IF NOT EXISTS users (
+         id    TEXT PRIMARY KEY,
+         email TEXT NOT NULL UNIQUE,
+         name  TEXT NOT NULL,
+         color TEXT NOT NULL
+       )`,
+      `CREATE TABLE IF NOT EXISTS documents (
+         id         TEXT PRIMARY KEY,
+         owner_id   TEXT NOT NULL REFERENCES users(id),
+         title      TEXT NOT NULL,
+         content    TEXT NOT NULL DEFAULT '',
+         version    INTEGER NOT NULL DEFAULT 1,
+         created_at TEXT NOT NULL,
+         updated_at TEXT NOT NULL
+       )`,
+      `CREATE INDEX IF NOT EXISTS idx_documents_owner ON documents(owner_id)`,
+      `CREATE TABLE IF NOT EXISTS document_shares (
+         document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+         user_id     TEXT NOT NULL REFERENCES users(id),
+         role        TEXT NOT NULL CHECK (role IN ('viewer', 'editor')),
+         created_at  TEXT NOT NULL,
+         PRIMARY KEY (document_id, user_id)
+       )`,
+      `CREATE INDEX IF NOT EXISTS idx_shares_user ON document_shares(user_id)`,
+    ],
+  },
+  {
+    id: 2,
+    name: "commenter role, versions, comments, assets, presence, activity",
+    up: async (db) => {
+      // SQLite can't alter a CHECK constraint, so rebuild document_shares if it predates 'commenter'.
+      const { rows } = await db.execute("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'document_shares'");
+      const needsRebuild = !String(rows[0]?.sql ?? "").includes("commenter");
+      return [
+        ...(needsRebuild
+          ? [
+              `CREATE TABLE document_shares_v2 (
+                 document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+                 user_id     TEXT NOT NULL REFERENCES users(id),
+                 role        TEXT NOT NULL CHECK (role IN ('viewer', 'commenter', 'editor')),
+                 created_at  TEXT NOT NULL,
+                 PRIMARY KEY (document_id, user_id)
+               )`,
+              `INSERT INTO document_shares_v2 SELECT document_id, user_id, role, created_at FROM document_shares`,
+              `DROP TABLE document_shares`,
+              `ALTER TABLE document_shares_v2 RENAME TO document_shares`,
+              `CREATE INDEX IF NOT EXISTS idx_shares_user ON document_shares(user_id)`,
+            ]
+          : []),
+        `CREATE TABLE IF NOT EXISTS document_versions (
+           id          TEXT PRIMARY KEY,
+           document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+           version     INTEGER NOT NULL,
+           title       TEXT NOT NULL,
+           content     TEXT NOT NULL,
+           author_id   TEXT NOT NULL REFERENCES users(id),
+           label       TEXT,
+           created_at  TEXT NOT NULL,
+           updated_at  TEXT NOT NULL
+         )`,
+        `CREATE INDEX IF NOT EXISTS idx_versions_doc ON document_versions(document_id, updated_at)`,
+        `CREATE TABLE IF NOT EXISTS comments (
+           id          TEXT PRIMARY KEY,
+           document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+           thread_id   TEXT NOT NULL,
+           author_id   TEXT NOT NULL REFERENCES users(id),
+           body        TEXT NOT NULL,
+           quote       TEXT,
+           prefix      TEXT,
+           resolved    INTEGER NOT NULL DEFAULT 0,
+           resolved_by TEXT REFERENCES users(id),
+           created_at  TEXT NOT NULL
+         )`,
+        `CREATE INDEX IF NOT EXISTS idx_comments_doc ON comments(document_id, created_at)`,
+        `CREATE TABLE IF NOT EXISTS assets (
+           id          TEXT PRIMARY KEY,
+           document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+           uploader_id TEXT NOT NULL REFERENCES users(id),
+           mime        TEXT NOT NULL,
+           size        INTEGER NOT NULL,
+           data        BLOB NOT NULL,
+           created_at  TEXT NOT NULL
+         )`,
+        `CREATE INDEX IF NOT EXISTS idx_assets_doc ON assets(document_id)`,
+        `CREATE TABLE IF NOT EXISTS presence (
+           document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+           user_id     TEXT NOT NULL REFERENCES users(id),
+           editing     INTEGER NOT NULL DEFAULT 0,
+           last_seen   TEXT NOT NULL,
+           PRIMARY KEY (document_id, user_id)
+         )`,
+        `CREATE TABLE IF NOT EXISTS activity (
+           id          TEXT PRIMARY KEY,
+           document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+           actor_id    TEXT NOT NULL REFERENCES users(id),
+           type        TEXT NOT NULL,
+           detail      TEXT,
+           created_at  TEXT NOT NULL
+         )`,
+        `CREATE INDEX IF NOT EXISTS idx_activity_doc ON activity(document_id, created_at)`,
+        `CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+      ];
+    },
+  },
 ];
 
-/** Demo accounts. Login is mocked (pick a user), so these are the "test accounts" for reviewers. */
-export const SEED_USERS = [
-  { id: "u_alice", email: "alice@ajaia.test", name: "Alice Tan", color: "#2563eb" },
-  { id: "u_bob", email: "bob@ajaia.test", name: "Bob Lim", color: "#16a34a" },
-  { id: "u_carol", email: "carol@ajaia.test", name: "Carol Ng", color: "#c2410c" },
-] as const;
+export async function migrate(db: Db, opts: { seed?: boolean } = {}) {
+  await db.execute(`CREATE TABLE IF NOT EXISTS schema_migrations (id INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)`);
+  const { rows } = await db.execute("SELECT id FROM schema_migrations");
+  const applied = new Set(rows.map((r) => Number(r.id)));
 
-const WELCOME_HTML = `<h1>Welcome to Ajaia Docs</h1>
-<p>This document is owned by <strong>Alice</strong> and shared with <strong>Bob</strong> as an <em>editor</em>.</p>
-<h2>Try this</h2>
-<ol>
-  <li>Format text with <strong>bold</strong>, <em>italic</em>, <u>underline</u>, headings and lists.</li>
-  <li>Open <strong>Share</strong> to grant Carol access as a viewer.</li>
-  <li>Switch user (top right) to see the document under <em>Shared with me</em>.</li>
-</ol>
-<ul><li>Changes save automatically.</li><li>Import a .txt, .md or .docx file from the documents page.</li></ul>`;
+  for (const m of MIGRATIONS) {
+    if (applied.has(m.id)) continue;
+    const statements = await m.up(db);
+    await db.batch(
+      [
+        ...statements,
+        // OR IGNORE: if two cold starts race, the loser's transaction is a harmless no-op on this row.
+        { sql: "INSERT OR IGNORE INTO schema_migrations (id, name, applied_at) VALUES (?, ?, ?)", args: [m.id, m.name, new Date().toISOString()] },
+      ],
+      "write",
+    );
+  }
 
-export async function migrate(db: Db, { seed = true } = {}) {
-  // One round trip: matters on a cold start against a remote Turso database.
-  await db.batch(SCHEMA, "write");
-  if (!seed) return;
-
-  const { rows } = await db.execute("SELECT COUNT(*) AS n FROM users");
-  if (Number(rows[0].n) > 0) return;
-
-  // INSERT OR IGNORE + fixed ids keep seeding idempotent if two cold starts race.
-  const now = new Date().toISOString();
-  const docId = "welcome";
-  await db.batch(
-    [
-      ...SEED_USERS.map((u) => ({
-        sql: "INSERT OR IGNORE INTO users (id, email, name, color) VALUES (?, ?, ?, ?)",
-        args: [u.id, u.email, u.name, u.color],
-      })),
-      {
-        sql: "INSERT OR IGNORE INTO documents (id, owner_id, title, content, version, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?)",
-        args: [docId, "u_alice", "Welcome to Ajaia Docs", WELCOME_HTML, now, now],
-      },
-      {
-        sql: "INSERT OR IGNORE INTO document_shares (document_id, user_id, role, created_at) VALUES (?, ?, 'editor', ?)",
-        args: [docId, "u_bob", now],
-      },
-    ],
-    "write",
-  );
+  if (opts.seed ?? true) await seed(db);
 }
 
 export function createDb(url: string, authToken?: string): Db {
@@ -117,3 +188,5 @@ export async function getDb(): Promise<Db> {
   await g.__dbReady;
   return g.__db!;
 }
+
+export const nowIso = () => new Date().toISOString();

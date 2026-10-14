@@ -1,48 +1,55 @@
 import { randomUUID } from "node:crypto";
+import { authorize, SHARE_ROLES, type Role, type ShareRole } from "./access";
+import { logActivity } from "./activity";
 import type { Db } from "./db";
-import { badRequest, conflict, forbidden, notFound } from "./errors";
+import { badRequest, conflict } from "./errors";
 import { sanitizeDocumentHtml } from "./sanitize";
+import { excerpt } from "./text";
+import { recordVersion } from "./versions";
 
 /**
  * Document + sharing domain logic. Every function takes the acting user's id
- * and enforces access itself, so API routes stay thin and the rules are
+ * and authorizes through access.ts, so API routes stay thin and every rule is
  * testable without HTTP.
- *
- * Access model:
- *   owner  — read, edit, rename, share/unshare, delete
- *   editor — read, edit, rename
- *   viewer — read only
- *   none   — 404 (we don't reveal that the document exists)
  */
 
-export type Role = "owner" | "editor" | "viewer";
-export type ShareRole = Exclude<Role, "owner">;
+export type { Role, ShareRole } from "./access";
 
 export const MAX_TITLE_LENGTH = 200;
-export const MAX_CONTENT_BYTES = 1_000_000; // ~1 MB of HTML
+export const MAX_CONTENT_BYTES = 1_000_000; // ~1 MB of HTML (images are stored separately)
+
+export interface Person {
+  id: string;
+  name: string;
+  email: string;
+  color: string;
+}
 
 export interface DocumentSummary {
   id: string;
   title: string;
+  excerpt: string;
   updatedAt: string;
   role: Role;
-  owner: { id: string; name: string; email: string };
+  owner: Person;
+  collaborators: number;
 }
 
-export interface DocumentDetail extends DocumentSummary {
+export interface DocumentDetail {
+  id: string;
+  title: string;
   content: string;
   version: number;
   createdAt: string;
+  updatedAt: string;
+  role: Role;
+  owner: Person;
 }
 
-export interface Share {
+export interface Share extends Omit<Person, "id"> {
   userId: string;
-  name: string;
-  email: string;
   role: ShareRole;
 }
-
-const canEdit = (role: Role) => role === "owner" || role === "editor";
 
 function normalizeTitle(raw: unknown): string {
   if (typeof raw !== "string") throw badRequest("Title must be a string");
@@ -54,33 +61,16 @@ function normalizeTitle(raw: unknown): string {
 
 function normalizeContent(raw: unknown): string {
   if (typeof raw !== "string") throw badRequest("Content must be a string");
-  if (Buffer.byteLength(raw, "utf8") > MAX_CONTENT_BYTES) throw badRequest("Document is too large (max 1 MB)");
+  if (Buffer.byteLength(raw, "utf8") > MAX_CONTENT_BYTES) throw badRequest("Document is too large (max 1 MB of text)");
   return sanitizeDocumentHtml(raw);
-}
-
-async function resolveRole(db: Db, userId: string, docId: string): Promise<Role | null> {
-  const { rows } = await db.execute({
-    sql: `SELECT d.owner_id, s.role AS share_role
-            FROM documents d
-            LEFT JOIN document_shares s ON s.document_id = d.id AND s.user_id = ?
-           WHERE d.id = ?`,
-    args: [userId, docId],
-  });
-  if (rows.length === 0) return null;
-  if (rows[0].owner_id === userId) return "owner";
-  return (rows[0].share_role as ShareRole | null) ?? null;
-}
-
-async function requireRole(db: Db, userId: string, docId: string): Promise<Role> {
-  const role = await resolveRole(db, userId, docId);
-  if (!role) throw notFound();
-  return role;
 }
 
 export async function listDocuments(db: Db, userId: string): Promise<{ owned: DocumentSummary[]; shared: DocumentSummary[] }> {
   const { rows } = await db.execute({
-    sql: `SELECT d.id, d.title, d.updated_at, d.owner_id, u.name AS owner_name, u.email AS owner_email,
-                 CASE WHEN d.owner_id = ? THEN 'owner' ELSE s.role END AS role
+    sql: `SELECT d.id, d.title, substr(d.content, 1, 4000) AS head, d.updated_at,
+                 u.id AS owner_id, u.name AS owner_name, u.email AS owner_email, u.color AS owner_color,
+                 CASE WHEN d.owner_id = ? THEN 'owner' ELSE s.role END AS role,
+                 (SELECT COUNT(*) FROM document_shares x WHERE x.document_id = d.id) AS collaborators
             FROM documents d
             JOIN users u ON u.id = d.owner_id
             LEFT JOIN document_shares s ON s.document_id = d.id AND s.user_id = ?
@@ -91,17 +81,19 @@ export async function listDocuments(db: Db, userId: string): Promise<{ owned: Do
   const docs: DocumentSummary[] = rows.map((r) => ({
     id: String(r.id),
     title: String(r.title),
+    excerpt: excerpt(String(r.head ?? "")),
     updatedAt: String(r.updated_at),
     role: r.role as Role,
-    owner: { id: String(r.owner_id), name: String(r.owner_name), email: String(r.owner_email) },
+    collaborators: Number(r.collaborators),
+    owner: { id: String(r.owner_id), name: String(r.owner_name), email: String(r.owner_email), color: String(r.owner_color) },
   }));
   return { owned: docs.filter((d) => d.role === "owner"), shared: docs.filter((d) => d.role !== "owner") };
 }
 
 export async function getDocument(db: Db, userId: string, docId: string): Promise<DocumentDetail> {
-  const role = await requireRole(db, userId, docId);
+  const role = await authorize(db, userId, docId, "read");
   const { rows } = await db.execute({
-    sql: `SELECT d.*, u.name AS owner_name, u.email AS owner_email
+    sql: `SELECT d.*, u.name AS owner_name, u.email AS owner_email, u.color AS owner_color
             FROM documents d JOIN users u ON u.id = d.owner_id WHERE d.id = ?`,
     args: [docId],
   });
@@ -114,14 +106,14 @@ export async function getDocument(db: Db, userId: string, docId: string): Promis
     createdAt: String(r.created_at),
     updatedAt: String(r.updated_at),
     role,
-    owner: { id: String(r.owner_id), name: String(r.owner_name), email: String(r.owner_email) },
+    owner: { id: String(r.owner_id), name: String(r.owner_name), email: String(r.owner_email), color: String(r.owner_color) },
   };
 }
 
 export async function createDocument(
   db: Db,
   userId: string,
-  input: { title?: unknown; content?: unknown } = {},
+  input: { title?: unknown; content?: unknown; source?: string } = {},
 ): Promise<DocumentDetail> {
   const title = input.title === undefined ? "Untitled document" : normalizeTitle(input.title);
   const content = input.content === undefined ? "" : normalizeContent(input.content);
@@ -132,7 +124,10 @@ export async function createDocument(
           VALUES (?, ?, ?, ?, 1, ?, ?)`,
     args: [id, userId, title, content, now, now],
   });
-  return getDocument(db, userId, id);
+  const doc = await getDocument(db, userId, id);
+  await recordVersion(db, doc, userId, { label: input.source ? `Imported from ${input.source}` : "Created" });
+  await logActivity(db, id, userId, input.source ? "imported" : "created", input.source ? { file: input.source } : undefined);
+  return doc;
 }
 
 /**
@@ -145,14 +140,15 @@ export async function updateDocument(
   docId: string,
   input: { title?: unknown; content?: unknown; baseVersion?: unknown },
 ): Promise<DocumentDetail> {
-  const role = await requireRole(db, userId, docId);
-  if (!canEdit(role)) throw forbidden("You have view-only access to this document");
+  await authorize(db, userId, docId, "edit");
 
   const sets: string[] = [];
   const args: (string | number)[] = [];
+  let newTitle: string | undefined;
   if (input.title !== undefined) {
+    newTitle = normalizeTitle(input.title);
     sets.push("title = ?");
-    args.push(normalizeTitle(input.title));
+    args.push(newTitle);
   }
   if (input.content !== undefined) {
     sets.push("content = ?");
@@ -163,6 +159,8 @@ export async function updateDocument(
     throw badRequest("baseVersion is required");
   }
 
+  const before = newTitle !== undefined ? (await db.execute({ sql: "SELECT title FROM documents WHERE id = ?", args: [docId] })).rows[0] : null;
+
   const result = await db.execute({
     sql: `UPDATE documents SET ${sets.join(", ")}, version = version + 1, updated_at = ?
            WHERE id = ? AND version = ?`,
@@ -171,29 +169,39 @@ export async function updateDocument(
   if (result.rowsAffected === 0) {
     throw conflict("This document was changed by someone else. Reload to get the latest version.");
   }
-  return getDocument(db, userId, docId);
+  const doc = await getDocument(db, userId, docId);
+  await recordVersion(db, doc, userId);
+  if (input.content !== undefined) await logActivity(db, docId, userId, "edited");
+  if (before && before.title !== newTitle) await logActivity(db, docId, userId, "renamed", { from: String(before.title), to: doc.title });
+  return doc;
 }
 
 export async function deleteDocument(db: Db, userId: string, docId: string): Promise<void> {
-  const role = await requireRole(db, userId, docId);
-  if (role !== "owner") throw forbidden("Only the owner can delete this document");
+  await authorize(db, userId, docId, "manage");
+  // Explicit child deletes: Turso connections don't persist PRAGMA foreign_keys, so don't rely on CASCADE.
   await db.batch(
-    [
-      { sql: "DELETE FROM document_shares WHERE document_id = ?", args: [docId] },
-      { sql: "DELETE FROM documents WHERE id = ?", args: [docId] },
-    ],
+    ["document_shares", "document_versions", "comments", "assets", "presence", "activity"].map((t) => ({
+      sql: `DELETE FROM ${t} WHERE document_id = ?`,
+      args: [docId],
+    })).concat([{ sql: "DELETE FROM documents WHERE id = ?", args: [docId] }]),
     "write",
   );
 }
 
 export async function listShares(db: Db, userId: string, docId: string): Promise<Share[]> {
-  await requireRole(db, userId, docId); // anyone with access can see who else has it
+  await authorize(db, userId, docId, "read"); // anyone with access can see who else has it
   const { rows } = await db.execute({
-    sql: `SELECT s.user_id, s.role, u.name, u.email FROM document_shares s
+    sql: `SELECT s.user_id, s.role, u.name, u.email, u.color FROM document_shares s
             JOIN users u ON u.id = s.user_id WHERE s.document_id = ? ORDER BY u.name`,
     args: [docId],
   });
-  return rows.map((r) => ({ userId: String(r.user_id), role: r.role as ShareRole, name: String(r.name), email: String(r.email) }));
+  return rows.map((r) => ({
+    userId: String(r.user_id),
+    role: r.role as ShareRole,
+    name: String(r.name),
+    email: String(r.email),
+    color: String(r.color),
+  }));
 }
 
 export async function shareDocument(
@@ -202,15 +210,14 @@ export async function shareDocument(
   docId: string,
   input: { email?: unknown; role?: unknown },
 ): Promise<Share[]> {
-  const role = await requireRole(db, userId, docId);
-  if (role !== "owner") throw forbidden("Only the owner can share this document");
+  await authorize(db, userId, docId, "manage");
 
   if (typeof input.email !== "string" || !input.email.trim()) throw badRequest("Email is required");
   const shareRole = input.role ?? "editor";
-  if (shareRole !== "viewer" && shareRole !== "editor") throw badRequest("Role must be 'viewer' or 'editor'");
+  if (!SHARE_ROLES.includes(shareRole as ShareRole)) throw badRequest("Role must be 'viewer', 'commenter' or 'editor'");
 
   const email = input.email.trim().toLowerCase();
-  const { rows } = await db.execute({ sql: "SELECT id FROM users WHERE email = ?", args: [email] });
+  const { rows } = await db.execute({ sql: "SELECT id, name FROM users WHERE email = ?", args: [email] });
   if (rows.length === 0) throw badRequest(`No user with email ${email}`);
   const targetId = String(rows[0].id);
   if (targetId === userId) throw badRequest("You already own this document");
@@ -219,17 +226,22 @@ export async function shareDocument(
   await db.execute({
     sql: `INSERT INTO document_shares (document_id, user_id, role, created_at) VALUES (?, ?, ?, ?)
           ON CONFLICT (document_id, user_id) DO UPDATE SET role = excluded.role`,
-    args: [docId, targetId, shareRole, new Date().toISOString()],
+    args: [docId, targetId, shareRole as string, new Date().toISOString()],
   });
+  await logActivity(db, docId, userId, "shared", { name: String(rows[0].name), role: shareRole as string });
   return listShares(db, userId, docId);
 }
 
 export async function unshareDocument(db: Db, userId: string, docId: string, targetUserId: string): Promise<Share[]> {
-  const role = await requireRole(db, userId, docId);
-  if (role !== "owner") throw forbidden("Only the owner can change sharing");
-  await db.execute({
+  await authorize(db, userId, docId, "manage");
+  const { rows } = await db.execute({ sql: "SELECT name FROM users WHERE id = ?", args: [targetUserId] });
+  const res = await db.execute({
     sql: "DELETE FROM document_shares WHERE document_id = ? AND user_id = ?",
     args: [docId, targetUserId],
   });
+  if (res.rowsAffected) {
+    await db.execute({ sql: "DELETE FROM presence WHERE document_id = ? AND user_id = ?", args: [docId, targetUserId] });
+    await logActivity(db, docId, userId, "unshared", { name: String(rows[0]?.name ?? "someone") });
+  }
   return listShares(db, userId, docId);
 }

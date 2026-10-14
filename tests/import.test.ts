@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
+import { readFileSync } from "node:fs";
+import { readAsset } from "@/lib/assets";
+import { importDocument } from "@/lib/import";
+import { ALICE, BOB, testDb } from "./helpers";
 import { AppError } from "@/lib/errors";
 import { convertFileToHtml, titleFromFilename } from "@/lib/import";
 
@@ -68,5 +72,20 @@ describe("file import", () => {
   it("derives a readable title from the filename", () => {
     expect(titleFromFilename("Q3_plan (final).docx")).toBe("Q3 plan (final)");
     expect(titleFromFilename(".md")).toBe("Imported document");
+  });
+});
+
+describe("importing a Word file with images", () => {
+  it("stores embedded images as access-controlled assets of the new document", async () => {
+    const db = await testDb();
+    const doc = await importDocument(db, ALICE, "Site visit.docx", readFileSync("tests/fixtures/with-image.docx"));
+    expect(doc.title).toBe("Site visit");
+    expect(doc.content).toContain("<h1>Site visit report</h1>");
+    expect(doc.content).toContain("<strong>inspected</strong>");
+    const src = doc.content.match(/<img src="(\/api\/assets\/[\w-]+)"/)?.[1];
+    expect(src).toBeTruthy();
+    const assetId = src!.split("/").pop()!;
+    expect((await readAsset(db, ALICE, assetId)).mime).toBe("image/png");
+    await expect(readAsset(db, BOB, assetId)).rejects.toMatchObject({ status: 404 }); // not shared with Bob
   });
 });

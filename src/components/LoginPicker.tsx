@@ -1,12 +1,13 @@
 "use client";
 
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/lib/client";
 import type { User } from "@/lib/auth";
-import { Avatar } from "./Avatar";
+import { Avatar } from "./ui/Avatar";
 
-export function LoginPicker({ users, currentUserId }: { users: User[]; currentUserId: string | null }) {
+export function LoginPicker({ users, currentUserId }: { users: (User & { hint: string })[]; currentUserId: string | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,15 +30,16 @@ export function LoginPicker({ users, currentUserId }: { users: User[]; currentUs
       <ul className="user-list">
         {users.map((u) => (
           <li key={u.id}>
-            <button className="user-option" onClick={() => signIn(u.id)} disabled={busy !== null}>
-              <Avatar name={u.name} color={u.color} />
-              <span>
-                <strong>{u.name}</strong>
+            <button className="user-option" onClick={() => signIn(u.id)} disabled={busy !== null} aria-label={`Continue as ${u.name}`}>
+              <Avatar name={u.name} color={u.color} size={42} />
+              <span className="user-option-text">
+                <strong>
+                  {u.name} {u.id === currentUserId && <span className="pill">Signed in</span>}
+                </strong>
                 <span className="muted small">{u.email}</span>
+                {u.hint && <span className="hint">{u.hint}</span>}
               </span>
-              <span className="user-option-cta">
-                {busy === u.id ? "Signing in…" : u.id === currentUserId ? "Current" : "Continue →"}
-              </span>
+              {busy === u.id ? <Loader2 className="spin" size={18} /> : <ArrowRight size={18} className="user-option-arrow" />}
             </button>
           </li>
         ))}

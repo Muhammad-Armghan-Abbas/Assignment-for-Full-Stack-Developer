@@ -4,7 +4,9 @@ const PORT = Number(process.env.E2E_PORT || 3100);
 
 export default defineConfig({
   testDir: "e2e",
-  timeout: 60_000,
+  timeout: 90_000,
+  workers: 1,
+  fullyParallel: false,
   use: {
     // Optional: point at a preinstalled Chromium instead of downloading one.
     launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
