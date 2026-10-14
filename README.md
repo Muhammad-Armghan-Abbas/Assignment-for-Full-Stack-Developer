@@ -2,9 +2,9 @@
 
 A collaborative document editor: write with rich formatting and images, share with editors, commenters or viewers, discuss in comment threads anchored to text, see who else is in the document, and roll back to any earlier version.
 
-**Live demo:** https://ajaia-docs-gilt-xi.vercel.app · **Walkthrough video:** see [`VIDEO_URL.txt`](VIDEO_URL.txt)
+**Live demo:** https://ajaia-docs-gilt-xi.vercel.app · **Walkthrough video:** see [`VIDEO_URL.txt`](VIDEO_URL.txt) · **Submission report:** [`SUBMISSION_REPORT.pdf`](SUBMISSION_REPORT.pdf)
 
-![Editor](docs/screenshots/06-welcome-editor.png)
+![Comments on an imported Word document](docs/screenshots/07-comments.jpg)
 
 ## Demo accounts
 

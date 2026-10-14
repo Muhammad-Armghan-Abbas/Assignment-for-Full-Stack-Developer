@@ -8,3 +8,4 @@ data/*.db-*
 next-env.d.ts
 test-results
 playwright-report
+Claude outputs/

@@ -1,10 +1,16 @@
-# Submission — Ajaia Docs
+# Submission: Ajaia Docs
+
+**Candidate:** Muhammad Armaghan Abbas · armaghanabbas11@gmail.com · +92 325 9377334 (phone / WhatsApp)
+[GitHub](https://github.com/Muhammad-Armghan-Abbas) · [LinkedIn](https://www.linkedin.com/in/armghan-abbas)
 
 ## Links
 
-- **Live app:** https://ajaia-docs-gilt-xi.vercel.app
-- **Walkthrough video:** see `VIDEO_URL.txt`
-- **Source code:** this folder (also _<add GitHub URL if public>_)
+| | |
+|---|---|
+| **Live app** | https://ajaia-docs-gilt-xi.vercel.app |
+| **Source code** | https://github.com/Muhammad-Armghan-Abbas/Assignment-for-Full-Stack-Developer (also in this folder) |
+| **Walkthrough video** | see `VIDEO_URL.txt` |
+| **Submission report (PDF)** | `SUBMISSION_REPORT.pdf`: requirement-by-requirement coverage with live screenshots |
 
 ## Test accounts
 
@@ -12,16 +18,16 @@ Login is mocked: pick a user on the sign-in page, no password. Use a second brow
 
 | User | Email | Starting state |
 |---|---|---|
-| Alice Tan | alice@ajaia.test | Owns "Welcome to Ajaia Docs"; **commenter** on Bob's "Q4 Launch Plan" |
-| Bob Lim | bob@ajaia.test | Owns "Q4 Launch Plan" (has a comment thread); **editor** on Alice's welcome doc |
-| Chris Ng | chris@ajaia.test | **Viewer** on the launch plan; use him to test sharing |
+| Alice Tan | alice@ajaia.test | Owns "Welcome to Ajaia Docs" and "Q1 Pilot Report"; commenter on Bob's "Q4 Launch Plan" |
+| Bob Lim | bob@ajaia.test | Owns "Q4 Launch Plan"; editor on Alice's welcome doc; **commenter** on the Q1 Pilot Report (with a comment thread) |
+| Chris Ng | chris@ajaia.test | **Viewer** on the Q4 Launch Plan and Q1 Pilot Report; use him to test sharing |
 
-**Suggested 3-minute review path:**
-1. Alice: open the welcome doc. Type `/` on an empty line, then try a table, an image and a checklist.
-2. Select a sentence and comment on it.
-3. Share the doc with Chris as a commenter.
-4. In a private window, sign in as Chris. Open the doc (Alice's avatar shows she's there) and reply to the comment. Commenters can't edit the text.
-5. Back as Alice, resolve the thread, then open **Version history** and restore an earlier version. Chris's tab updates on its own.
+**3-minute review path**
+1. Sign in as **Alice**. Import `sample-files/q1-pilot-report.docx`: headings, table, link and the embedded chart come through.
+2. Type `/` on an empty line to insert a table or checklist. Select a sentence and click **Comment**.
+3. **Share** the document with bob@ajaia.test as **Commenter**.
+4. In a private window, sign in as **Bob** and open it from **Shared with me**. Alice sees Bob's avatar appear. Bob can reply to comments but can't edit.
+5. As Alice, resolve the thread, edit a paragraph, then open **Version history**, preview the "Imported" version and **Restore** it. Bob's window updates on its own.
 
 ## What's included
 
@@ -31,35 +37,42 @@ Login is mocked: pick a user on the sign-in page, no password. Use a second brow
 | Setup & run instructions | `README.md` |
 | Architecture note | `ARCHITECTURE.md` |
 | AI workflow note | `AI_WORKFLOW.md` |
+| Submission report | `SUBMISSION_REPORT.pdf` |
 | This file | `SUBMISSION.md` |
 | Walkthrough video URL | `VIDEO_URL.txt` |
-| Screenshots | `docs/screenshots/` (desktop and mobile) |
+| Screenshots (from the live deployment) | `docs/screenshots/` (11 images) |
+| Sample files for testing import, images and validation | `sample-files/` (with a 10-minute test script in its README) |
 | Automated tests | `tests/` (Vitest, 31 tests), `e2e/` (Playwright, 6 multi-user browser tests) |
 
 ## Status
 
 **Working end to end**
 
-- Documents: create (blank or template), rename, autosave, reopen, delete; conflict detection between simultaneous editors.
-- Rich text: bold, italic, underline, strikethrough, colour, highlight, font size, H1–H3, alignment, bulleted/numbered lists, checklists, quotes, code blocks, dividers, links.
-- Tables with row/column tools, and resizable images (upload, paste, drag-drop). The `/` command menu, selection toolbar, outline, and word count.
-- Import `.txt` / `.md` / `.docx` (Word images included) as a new document. Export Markdown / HTML / PDF.
-- Sharing: editor / commenter / viewer roles, change or remove access, owned vs shared lists, search and sort.
-- Comment threads anchored to text, with replies, resolve/reopen and delete.
-- Version history with preview and non-destructive restore.
-- Live presence and collaborators' changes arriving without refresh; an activity feed.
-- Server-enforced permissions everywhere, including image URLs.
-- Persistence in SQLite (local) / Turso (deployed), with schema migrations.
+- **Documents:** create (blank, template or import), rename, autosave, reopen and delete, with conflict detection between simultaneous editors.
+- **Rich text:**
+  - bold, italic, underline, strikethrough;
+  - colour, highlight and font size;
+  - H1–H3 and alignment;
+  - bulleted, numbered and checklist lists;
+  - quotes, code blocks, dividers and links.
+- **Tables and images:** tables with row/column tools, and resizable images (upload, paste or drag-drop). Also the `/` command menu, selection toolbar, outline and word count.
+- **Import and export:** `.txt` / `.md` / `.docx` import, including images inside Word files. Export to Markdown, HTML or Print → PDF.
+- **Sharing:** editor / commenter / viewer roles; change or remove access; owned vs shared lists, with search and sort.
+- **Comments:** threads anchored to text, with replies, resolve/reopen and delete.
+- **Version history:** preview any version and restore it without losing history.
+- **Collaboration:** live presence with profile photos, collaborators' changes arriving without a refresh, and an activity feed.
+- **Permissions:** enforced on the server everywhere, including image URLs.
+- **Storage:** SQLite locally and Turso in production, with schema migrations that upgraded the live database in place.
 
 **Intentionally not built** (reasoning in `ARCHITECTURE.md`)
 
-- Real authentication (a mocked user picker; authorisation is real).
+- Real authentication: there's a mocked user picker, but authorisation is real.
 - Character-level real-time co-editing and live cursors (CRDT).
-- Invites for people without accounts; link sharing.
+- Invites for people without accounts, and link sharing.
 - Suggestion mode / tracked changes.
 
 **With another 2–4 hours I would build**
 
 1. Yjs-based co-editing on a small WebSocket service (e.g. Hocuspocus on Fly.io), keeping the current HTML snapshots for history, search and export.
-2. Suggestion mode built on the existing comment-anchoring approach.
+2. Suggestion mode, built on the existing comment-anchoring approach.
 3. Real auth (Auth.js magic links) plus invite-by-email for people without accounts.
