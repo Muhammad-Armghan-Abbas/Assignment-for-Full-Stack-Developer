@@ -75,6 +75,19 @@ describe("file import", () => {
   });
 });
 
+describe("sample files shipped in sample-files/", () => {
+  it("keep underline from Word and strikethrough from Markdown", async () => {
+    const docx = await convertFileToHtml("q1-pilot-report.docx", readFileSync("sample-files/q1-pilot-report.docx"));
+    expect(docx).toContain("<u>underline</u>");
+    expect(docx).toContain('<a href="https://ajaia.com">');
+    expect(docx).toContain("<table>");
+    const md = await convertFileToHtml("meeting-notes.md", readFileSync("sample-files/meeting-notes.md"));
+    expect(md).toContain("<s>Real-time cursors</s>");
+    expect(md).toMatch(/<th>Milestone<\/th>/);
+    expect(md).toContain("<blockquote>");
+  });
+});
+
 describe("importing a Word file with images", () => {
   it("stores embedded images as access-controlled assets of the new document", async () => {
     const db = await testDb();

@@ -31,7 +31,7 @@ export function LoginPicker({ users, currentUserId }: { users: (User & { hint: s
         {users.map((u) => (
           <li key={u.id}>
             <button className="user-option" onClick={() => signIn(u.id)} disabled={busy !== null} aria-label={`Continue as ${u.name}`}>
-              <Avatar name={u.name} color={u.color} size={42} />
+              <Avatar name={u.name} color={u.color} src={u.avatarUrl} size={42} />
               <span className="user-option-text">
                 <strong>
                   {u.name} {u.id === currentUserId && <span className="pill">Signed in</span>}

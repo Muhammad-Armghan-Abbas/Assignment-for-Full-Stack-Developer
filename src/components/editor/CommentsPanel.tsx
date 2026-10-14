@@ -94,7 +94,7 @@ export function CommentsPanel({
             {t.messages.map((m, i) => (
               <div key={m.id} className={`msg${i > 0 ? " is-reply" : ""}`}>
                 <div className="msg-head">
-                  <Avatar name={m.author.name} color={m.author.color} size={26} />
+                  <Avatar name={m.author.name} color={m.author.color} src={m.author.avatarUrl} size={26} />
                   <div>
                     <strong>{m.author.id === me ? "You" : m.author.name}</strong>
                     <span className="muted small">{timeAgo(m.createdAt)}</span>

@@ -34,7 +34,7 @@ Login is mocked: pick a user on the sign-in page, no password. Use a second brow
 | This file | `SUBMISSION.md` |
 | Walkthrough video URL | `VIDEO_URL.txt` |
 | Screenshots | `docs/screenshots/` (desktop and mobile) |
-| Automated tests | `tests/` (Vitest, 30 tests), `e2e/` (Playwright, 6 multi-user browser tests) |
+| Automated tests | `tests/` (Vitest, 31 tests), `e2e/` (Playwright, 6 multi-user browser tests) |
 
 ## Status
 

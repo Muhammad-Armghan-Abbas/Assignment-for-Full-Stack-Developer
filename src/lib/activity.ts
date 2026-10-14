@@ -9,7 +9,7 @@ export interface ActivityItem {
   createdAt: string;
   detail: Record<string, string> | null;
   document: { id: string; title: string };
-  actor: { id: string; name: string; color: string };
+  actor: { id: string; name: string; color: string; avatarUrl: string | null };
 }
 
 /** Edits within this window by the same person collapse into one feed entry. */
@@ -43,7 +43,7 @@ export async function logActivity(
 /** Recent activity across every document the user can currently access. */
 export async function listActivity(db: Db, userId: string, limit = 25): Promise<ActivityItem[]> {
   const { rows } = await db.execute({
-    sql: `SELECT a.id, a.type, a.detail, a.created_at, d.id AS doc_id, d.title, u.id AS actor_id, u.name, u.color
+    sql: `SELECT a.id, a.type, a.detail, a.created_at, d.id AS doc_id, d.title, u.id AS actor_id, u.name, u.color, u.avatar_url
             FROM activity a
             JOIN documents d ON d.id = a.document_id
             JOIN users u ON u.id = a.actor_id
@@ -59,6 +59,6 @@ export async function listActivity(db: Db, userId: string, limit = 25): Promise<
     createdAt: String(r.created_at),
     detail: r.detail ? JSON.parse(String(r.detail)) : null,
     document: { id: String(r.doc_id), title: String(r.title) },
-    actor: { id: String(r.actor_id), name: String(r.name), color: String(r.color) },
+    actor: { id: String(r.actor_id), name: String(r.name), color: String(r.color), avatarUrl: r.avatar_url ? String(r.avatar_url) : null },
   }));
 }

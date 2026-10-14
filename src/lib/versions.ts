@@ -27,7 +27,7 @@ export interface VersionSummary {
   createdAt: string;
   updatedAt: string;
   words: number;
-  author: { id: string; name: string; color: string };
+  author: { id: string; name: string; color: string; avatarUrl: string | null };
 }
 
 export interface VersionDetail extends VersionSummary {
@@ -76,7 +76,7 @@ function toSummary(r: Record<string, unknown>): VersionSummary {
     createdAt: String(r.created_at),
     updatedAt: String(r.updated_at),
     words: wordCount(String(r.content ?? "")),
-    author: { id: String(r.author_id), name: String(r.name), color: String(r.color) },
+    author: { id: String(r.author_id), name: String(r.name), color: String(r.color), avatarUrl: r.avatar_url ? String(r.avatar_url) : null },
   };
 }
 
@@ -84,7 +84,7 @@ function toSummary(r: Record<string, unknown>): VersionSummary {
 export async function listVersions(db: Db, userId: string, docId: string): Promise<VersionSummary[]> {
   await authorize(db, userId, docId, "edit");
   const { rows } = await db.execute({
-    sql: `SELECT v.id, v.version, v.title, v.label, v.created_at, v.updated_at, v.author_id, v.content, u.name, u.color
+    sql: `SELECT v.id, v.version, v.title, v.label, v.created_at, v.updated_at, v.author_id, v.content, u.name, u.color, u.avatar_url
             FROM document_versions v JOIN users u ON u.id = v.author_id
            WHERE v.document_id = ? ORDER BY v.updated_at DESC LIMIT ?`,
     args: [docId, MAX_VERSIONS_LISTED],
@@ -95,7 +95,7 @@ export async function listVersions(db: Db, userId: string, docId: string): Promi
 export async function getVersion(db: Db, userId: string, docId: string, versionId: string): Promise<VersionDetail> {
   await authorize(db, userId, docId, "edit");
   const { rows } = await db.execute({
-    sql: `SELECT v.*, u.name, u.color FROM document_versions v JOIN users u ON u.id = v.author_id
+    sql: `SELECT v.*, u.name, u.color, u.avatar_url FROM document_versions v JOIN users u ON u.id = v.author_id
            WHERE v.id = ? AND v.document_id = ?`,
     args: [versionId, docId],
   });

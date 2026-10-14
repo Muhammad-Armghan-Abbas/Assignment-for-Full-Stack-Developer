@@ -32,7 +32,7 @@ export function ActivityFeed({ items, me }: { items: ActivityItem[]; me: string 
         <ol>
           {items.map((a) => (
             <li key={a.id}>
-              <Avatar name={a.actor.name} color={a.actor.color} size={26} />
+              <Avatar name={a.actor.name} color={a.actor.color} src={a.actor.avatarUrl} size={26} />
               <div>
                 <p>
                   <strong>{a.actor.id === me ? "You" : a.actor.name}</strong> {describe(a, me)}{" "}

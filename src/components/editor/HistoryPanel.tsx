@@ -71,7 +71,7 @@ export function HistoryPanel({
                   <span className="version-time">{fmt(v.updatedAt)} {i === 0 && <span className="pill">Current</span>}</span>
                   {v.label && <span className="version-label">{v.label}</span>}
                   <span className="version-author">
-                    <Avatar name={v.author.name} color={v.author.color} size={18} /> {v.author.name}
+                    <Avatar name={v.author.name} color={v.author.color} src={v.author.avatarUrl} size={18} /> {v.author.name}
                     <span className="muted small">· {v.words} words</span>
                   </span>
                 </button>

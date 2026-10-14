@@ -8,6 +8,9 @@ A collaborative document editor: write with rich formatting and images, share wi
 
 ## Demo accounts
 
+Alice and Bob have profile photos; Carol shows the initials fallback.
+
+
 Sign-in is mocked: choose an account on the login page (no password). Open a second browser or a private window to be two people at once.
 
 | User | Email | Seeded state |
@@ -39,6 +42,10 @@ Sign-in is mocked: choose an account on the login page (no password). Open a sec
 
 All permissions are enforced on the server. People without access get a 404, including for image URLs.
 
+## Sample files
+
+`sample-files/` has a Word report (headings, table, link, embedded chart), Markdown notes, a plain-text file, two images for insert/paste/drag-drop, and an unsupported `.csv`. See [`sample-files/README.md`](sample-files/README.md) for a 10-minute test script.
+
 ## Run locally
 
 Requires **Node.js 22** (22.12 or newer).
@@ -54,7 +61,7 @@ Data lives in a SQLite file at `data/app.db`, created, migrated and seeded on fi
 ### Tests
 
 ```bash
-npm test             # 30 unit/integration tests (Vitest, in-memory SQLite), ~2 s
+npm test             # 31 unit/integration tests (Vitest, in-memory SQLite), ~2 s
 npm run test:e2e     # 6 browser tests (Playwright) against a production build on :3100
 npm run typecheck
 ```

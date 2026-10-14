@@ -7,12 +7,13 @@ import type { Client, InStatement } from "@libsql/client";
  */
 
 export const SEED_USERS = [
-  { id: "u_alice", email: "alice@ajaia.test", name: "Alice Tan", color: "#1d4ed8" },
-  { id: "u_bob", email: "bob@ajaia.test", name: "Bob Lim", color: "#047857" },
-  { id: "u_carol", email: "carol@ajaia.test", name: "Carol Ng", color: "#c2410c" },
+  // Photos are optional: anyone without one gets coloured initials.
+  { id: "u_alice", email: "alice@ajaia.test", name: "Alice Tan", color: "#1d4ed8", avatar: "/avatars/alice.jpg" },
+  { id: "u_bob", email: "bob@ajaia.test", name: "Bob Lim", color: "#047857", avatar: "/avatars/bob.jpg" },
+  { id: "u_carol", email: "carol@ajaia.test", name: "Carol Ng", color: "#c2410c", avatar: null },
 ] as const;
 
-const SEED_REVISION = "2";
+const SEED_REVISION = "3";
 
 const WELCOME_HTML = `<h1>Welcome to Ajaia Docs</h1>
 <p>Ajaia Docs is a lightweight collaborative editor. This document is owned by <strong>Alice</strong> and shared with <strong>Bob</strong> as an editor. <mark data-color="#fde68a" style="background-color: #fde68a; color: inherit">Everything here is editable</mark> — try it.</p>
@@ -66,9 +67,9 @@ export async function seed(db: Client) {
   const stmts: InStatement[] = [];
   for (const u of SEED_USERS) {
     stmts.push({
-      sql: `INSERT INTO users (id, email, name, color) VALUES (?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET name = excluded.name, color = excluded.color`,
-      args: [u.id, u.email, u.name, u.color],
+      sql: `INSERT INTO users (id, email, name, color, avatar_url) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET name = excluded.name, color = excluded.color, avatar_url = excluded.avatar_url`,
+      args: [u.id, u.email, u.name, u.color, u.avatar],
     });
   }
 

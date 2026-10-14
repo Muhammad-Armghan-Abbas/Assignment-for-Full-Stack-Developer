@@ -96,7 +96,7 @@ export function ShareDialog({ docId, title, isOwner, owner, onClose }: { docId: 
         <div className="suggestions">
           {suggestions.map((u) => (
             <button key={u.id} type="button" className="chip" onClick={() => setEmail(u.email)}>
-              <Avatar name={u.name} color={u.color} size={20} /> {u.email}
+              <Avatar name={u.name} color={u.color} src={u.avatarUrl} size={20} /> {u.email}
             </button>
           ))}
         </div>
@@ -106,7 +106,7 @@ export function ShareDialog({ docId, title, isOwner, owner, onClose }: { docId: 
       <h3 className="people-heading">People with access</h3>
       <ul className="people">
         <li>
-          <Avatar name={owner.name} color={owner.color} size={34} />
+          <Avatar name={owner.name} color={owner.color} src={owner.avatarUrl} size={34} />
           <span className="people-name">
             <strong>{owner.name}</strong>
             <span className="muted small">{owner.email}</span>
@@ -116,7 +116,7 @@ export function ShareDialog({ docId, title, isOwner, owner, onClose }: { docId: 
         {shares === null && !error && <li className="muted">Loading…</li>}
         {shares?.map((s) => (
           <li key={s.userId}>
-            <Avatar name={s.name} color={s.color} size={34} />
+            <Avatar name={s.name} color={s.color} src={s.avatarUrl} size={34} />
             <span className="people-name">
               <strong>{s.name}</strong>
               <span className="muted small">{s.email}</span>

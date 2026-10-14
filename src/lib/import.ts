@@ -64,6 +64,8 @@ export async function convertFile(filename: string, data: Buffer): Promise<Conve
       const result = await mammoth.convertToHtml(
         { buffer: data },
         {
+          // mammoth ignores underline by default; keep it, since the editor supports it.
+          styleMap: ["u => u"],
           convertImage: mammoth.images.imgElement(async (image) => {
             if (images.length >= MAX_EMBEDDED_IMAGES) return { src: "" };
             images.push(new Uint8Array(await image.readAsArrayBuffer()));

@@ -22,7 +22,7 @@ export interface CommentMessage {
   id: string;
   body: string;
   createdAt: string;
-  author: { id: string; name: string; color: string };
+  author: { id: string; name: string; color: string; avatarUrl: string | null };
 }
 
 export interface CommentThread {
@@ -45,7 +45,7 @@ function normalizeBody(raw: unknown): string {
 export async function listThreads(db: Db, userId: string, docId: string): Promise<CommentThread[]> {
   await authorize(db, userId, docId, "read");
   const { rows } = await db.execute({
-    sql: `SELECT c.*, u.name, u.color, r.name AS resolver_name
+    sql: `SELECT c.*, u.name, u.color, u.avatar_url, r.name AS resolver_name
             FROM comments c
             JOIN users u ON u.id = c.author_id
             LEFT JOIN users r ON r.id = c.resolved_by
@@ -59,7 +59,7 @@ export async function listThreads(db: Db, userId: string, docId: string): Promis
       id: String(r.id),
       body: String(r.body),
       createdAt: String(r.created_at),
-      author: { id: String(r.author_id), name: String(r.name), color: String(r.color) },
+      author: { id: String(r.author_id), name: String(r.name), color: String(r.color), avatarUrl: r.avatar_url ? String(r.avatar_url) : null },
     };
     if (r.id === r.thread_id) {
       threads.set(String(r.id), {

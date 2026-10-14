@@ -1,0 +1,13 @@
+Ajaia Docs — release notes (plain text import test)
+
+This file is plain text. Blank lines separate paragraphs,
+and single line breaks inside a paragraph are kept.
+
+What's new in v2:
+- Comment threads anchored to text
+- Version history with restore
+- Images, tables and checklists
+
+Characters that look like HTML are shown literally, not executed: <b>not bold</b> <script>alert(1)</script>
+
+After importing, try formatting this text with the toolbar: make the first line a Heading 1, turn the "What's new" lines into a bulleted list, and bold a word.

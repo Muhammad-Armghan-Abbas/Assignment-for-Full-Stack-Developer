@@ -214,5 +214,9 @@ describe("migrations", () => {
     expect((await getDocument(legacy, BOB, "old")).role).toBe("editor");
     await shareDocument(legacy, ALICE, "old", { email: "carol@ajaia.test", role: "commenter" }); // new role accepted
     expect((await getDocument(legacy, CAROL, "old")).role).toBe("commenter");
+    // Migration 3 + seed revision 3 add profile photos, with initials as the fallback.
+    expect((await getDocument(legacy, ALICE, "old")).owner.avatarUrl).toBe("/avatars/alice.jpg");
+    const shares = await shareDocument(legacy, ALICE, "old", { email: "carol@ajaia.test", role: "viewer" });
+    expect(shares.find((s) => s.userId === CAROL)?.avatarUrl).toBeNull();
   });
 });

@@ -20,7 +20,7 @@ export function DocCard({ doc }: { doc: DocumentSummary }) {
       <div className="doc-card-body">
         <span className="doc-title">{doc.title}</span>
         <div className="doc-meta-row">
-          <Avatar name={doc.owner.name} color={doc.owner.color} size={20} />
+          <Avatar name={doc.owner.name} color={doc.owner.color} src={doc.owner.avatarUrl} size={20} />
           <span className="muted small truncate">{doc.role === "owner" ? "You" : doc.owner.name} · {timeAgo(doc.updatedAt)}</span>
         </div>
         <div className="doc-meta-row">

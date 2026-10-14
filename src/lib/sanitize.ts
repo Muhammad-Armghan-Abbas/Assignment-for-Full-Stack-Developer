@@ -64,6 +64,8 @@ export function sanitizeDocumentHtml(html: string): string {
       h6: "h3",
       b: "strong",
       i: "em",
+      del: "s", // Markdown ~~strikethrough~~
+      strike: "s",
       input: (tagName, attribs) =>
         attribs.type === "checkbox" ? { tagName, attribs } : { tagName: "span", attribs: {} },
     },

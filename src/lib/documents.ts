@@ -23,6 +23,7 @@ export interface Person {
   name: string;
   email: string;
   color: string;
+  avatarUrl: string | null;
 }
 
 export interface DocumentSummary {
@@ -68,7 +69,7 @@ function normalizeContent(raw: unknown): string {
 export async function listDocuments(db: Db, userId: string): Promise<{ owned: DocumentSummary[]; shared: DocumentSummary[] }> {
   const { rows } = await db.execute({
     sql: `SELECT d.id, d.title, substr(d.content, 1, 4000) AS head, d.updated_at,
-                 u.id AS owner_id, u.name AS owner_name, u.email AS owner_email, u.color AS owner_color,
+                 u.id AS owner_id, u.name AS owner_name, u.email AS owner_email, u.color AS owner_color, u.avatar_url AS owner_avatar,
                  CASE WHEN d.owner_id = ? THEN 'owner' ELSE s.role END AS role,
                  (SELECT COUNT(*) FROM document_shares x WHERE x.document_id = d.id) AS collaborators
             FROM documents d
@@ -85,7 +86,7 @@ export async function listDocuments(db: Db, userId: string): Promise<{ owned: Do
     updatedAt: String(r.updated_at),
     role: r.role as Role,
     collaborators: Number(r.collaborators),
-    owner: { id: String(r.owner_id), name: String(r.owner_name), email: String(r.owner_email), color: String(r.owner_color) },
+    owner: { id: String(r.owner_id), name: String(r.owner_name), email: String(r.owner_email), color: String(r.owner_color), avatarUrl: r.owner_avatar ? String(r.owner_avatar) : null },
   }));
   return { owned: docs.filter((d) => d.role === "owner"), shared: docs.filter((d) => d.role !== "owner") };
 }
@@ -93,7 +94,7 @@ export async function listDocuments(db: Db, userId: string): Promise<{ owned: Do
 export async function getDocument(db: Db, userId: string, docId: string): Promise<DocumentDetail> {
   const role = await authorize(db, userId, docId, "read");
   const { rows } = await db.execute({
-    sql: `SELECT d.*, u.name AS owner_name, u.email AS owner_email, u.color AS owner_color
+    sql: `SELECT d.*, u.name AS owner_name, u.email AS owner_email, u.color AS owner_color, u.avatar_url AS owner_avatar
             FROM documents d JOIN users u ON u.id = d.owner_id WHERE d.id = ?`,
     args: [docId],
   });
@@ -106,7 +107,7 @@ export async function getDocument(db: Db, userId: string, docId: string): Promis
     createdAt: String(r.created_at),
     updatedAt: String(r.updated_at),
     role,
-    owner: { id: String(r.owner_id), name: String(r.owner_name), email: String(r.owner_email), color: String(r.owner_color) },
+    owner: { id: String(r.owner_id), name: String(r.owner_name), email: String(r.owner_email), color: String(r.owner_color), avatarUrl: r.owner_avatar ? String(r.owner_avatar) : null },
   };
 }
 
@@ -191,7 +192,7 @@ export async function deleteDocument(db: Db, userId: string, docId: string): Pro
 export async function listShares(db: Db, userId: string, docId: string): Promise<Share[]> {
   await authorize(db, userId, docId, "read"); // anyone with access can see who else has it
   const { rows } = await db.execute({
-    sql: `SELECT s.user_id, s.role, u.name, u.email, u.color FROM document_shares s
+    sql: `SELECT s.user_id, s.role, u.name, u.email, u.color, u.avatar_url FROM document_shares s
             JOIN users u ON u.id = s.user_id WHERE s.document_id = ? ORDER BY u.name`,
     args: [docId],
   });
@@ -200,7 +201,7 @@ export async function listShares(db: Db, userId: string, docId: string): Promise
     role: r.role as ShareRole,
     name: String(r.name),
     email: String(r.email),
-    color: String(r.color),
+    color: String(r.color), avatarUrl: r.avatar_url ? String(r.avatar_url) : null,
   }));
 }
 

@@ -13,6 +13,7 @@ export interface PresenceUser {
   id: string;
   name: string;
   color: string;
+  avatarUrl: string | null;
   editing: boolean;
 }
 
@@ -38,7 +39,7 @@ export async function sync(db: Db, userId: string, docId: string, editing: boole
       },
       { sql: "SELECT version, updated_at, title FROM documents WHERE id = ?", args: [docId] },
       {
-        sql: `SELECT u.id, u.name, u.color, p.editing FROM presence p JOIN users u ON u.id = p.user_id
+        sql: `SELECT u.id, u.name, u.color, u.avatar_url, p.editing FROM presence p JOIN users u ON u.id = p.user_id
                WHERE p.document_id = ? AND p.last_seen > ? ORDER BY u.name`,
         args: [docId, cutoff],
       },
@@ -56,7 +57,7 @@ export async function sync(db: Db, userId: string, docId: string, editing: boole
     version: Number(d.version),
     updatedAt: String(d.updated_at),
     title: String(d.title),
-    presence: people.rows.map((r) => ({ id: String(r.id), name: String(r.name), color: String(r.color), editing: Boolean(r.editing) })),
+    presence: people.rows.map((r) => ({ id: String(r.id), name: String(r.name), color: String(r.color), avatarUrl: r.avatar_url ? String(r.avatar_url) : null, editing: Boolean(r.editing) })),
     commentsKey: `${c.n}:${c.latest}:${c.resolved}`,
   };
 }

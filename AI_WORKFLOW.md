@@ -36,9 +36,22 @@
 | `npm i -D typescript` pulled TypeScript 7 | Pinned TS 5.9, which Next.js tooling expects. |
 | Yjs/CRDT co-editing, suggestion mode, real auth | Out of scope for the timebox; documented in ARCHITECTURE.md with the next step for each. |
 
+## Images: what AI can generate vs. what I chose
+
+AI tooling can produce images too: it can generate pictures or pull stock photos into a build. I was deliberate about which kind each image is:
+
+| Image | Source | How it's handled |
+|---|---|---|
+| Demo user profile photos | **Real photos I supplied**, not AI-generated faces | Cropped to the face and resized from 4–7k px originals to 256 × 256 JPEG (~12 KB each) with a script. Served as static files (`public/avatars/`) and stored as `users.avatar_url` (migration 3). The `<Avatar>` component lazy-loads the photo over coloured initials, so a user without a photo (Carol) or a failed load still shows initials. |
+| Ajaia logo and wordmark | Supplied by me | Background made transparent and trimmed; the favicon is generated from the mark. |
+| Chart and diagram in `sample-files/` | Drawn programmatically (Python/PIL) from known numbers | Not AI-generated imagery, so the test data is exact and reproducible. |
+| Images users put in documents | Uploaded at runtime | Stored as access-controlled assets with magic-byte type checks; SVG refused; never hot-linked from third-party URLs. |
+
+I avoided AI-generated faces for the demo personas. Supplied photos look like a real product, and there's no question of a generated likeness resembling a real person.
+
 ## How I verified correctness, UX and reliability
 
-- **Correctness:** 30 Vitest tests over the domain layer. They cover the full permission matrix (404 vs 403), conflicts, version grouping and restore, comment resolve rules, image access and magic-byte checks, the sanitizer allow-list, presence, activity scoping, cascade deletes, schema upgrade, and all import formats including a real Word file with an image. Each test gets a fresh in-memory database.
+- **Correctness:** 31 Vitest tests over the domain layer. They cover the full permission matrix (404 vs 403), conflicts, version grouping and restore, comment resolve rules, image access and magic-byte checks, the sanitizer allow-list, presence, activity scoping, cascade deletes, schema upgrade (including the avatar migration), and all import formats, with a real Word file containing an image and the shipped sample files. Each test gets a fresh in-memory database.
 - **End to end:** 6 Playwright tests against the production build, using two or three simultaneous users:
   - create/format/reload/share/view-only, with presence and a live edit arriving in the viewer's tab;
   - slash menu, tables, checklists, image upload, and an image URL that returns 404 for a user without access;

@@ -18,12 +18,12 @@ export function UserMenu({ user }: { user: User }) {
   return (
     <div className="menu" ref={ref}>
       <button className="avatar-btn" onClick={toggle} aria-haspopup="menu" aria-expanded={open} aria-label={`Account: ${user.name}`}>
-        <Avatar name={user.name} color={user.color} size={34} />
+        <Avatar name={user.name} color={user.color} src={user.avatarUrl} size={34} />
       </button>
       {open && (
         <div className="menu-list menu-right" role="menu">
           <div className="menu-header">
-            <Avatar name={user.name} color={user.color} size={36} />
+            <Avatar name={user.name} color={user.color} src={user.avatarUrl} size={36} />
             <div>
               <strong>{user.name}</strong>
               <span className="muted small">{user.email}</span>

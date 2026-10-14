@@ -16,6 +16,7 @@ export interface User {
   email: string;
   name: string;
   color: string;
+  avatarUrl: string | null;
 }
 
 let warned = false;
@@ -47,18 +48,18 @@ export function decodeSession(token: string | undefined): string | null {
 
 export async function listUsers(): Promise<User[]> {
   const db = await getDb();
-  const { rows } = await db.execute("SELECT id, email, name, color FROM users ORDER BY name");
-  return rows.map((r) => ({ id: String(r.id), email: String(r.email), name: String(r.name), color: String(r.color) }));
+  const { rows } = await db.execute("SELECT id, email, name, color, avatar_url FROM users ORDER BY name");
+  return rows.map((r) => ({ id: String(r.id), email: String(r.email), name: String(r.name), color: String(r.color), avatarUrl: r.avatar_url ? String(r.avatar_url) : null }));
 }
 
 export async function getCurrentUser(): Promise<User | null> {
   const userId = decodeSession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!userId) return null;
   const db = await getDb();
-  const { rows } = await db.execute({ sql: "SELECT id, email, name, color FROM users WHERE id = ?", args: [userId] });
+  const { rows } = await db.execute({ sql: "SELECT id, email, name, color, avatar_url FROM users WHERE id = ?", args: [userId] });
   if (rows.length === 0) return null;
   const r = rows[0];
-  return { id: String(r.id), email: String(r.email), name: String(r.name), color: String(r.color) };
+  return { id: String(r.id), email: String(r.email), name: String(r.name), color: String(r.color), avatarUrl: r.avatar_url ? String(r.avatar_url) : null };
 }
 
 export async function requireUser(): Promise<User> {

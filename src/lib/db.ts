@@ -132,6 +132,14 @@ const MIGRATIONS: Migration[] = [
       ];
     },
   },
+  {
+    id: 3,
+    name: "user avatar photos",
+    up: async (db) => {
+      const { rows } = await db.execute("PRAGMA table_info(users)");
+      return rows.some((r) => r.name === "avatar_url") ? [] : ["ALTER TABLE users ADD COLUMN avatar_url TEXT"];
+    },
+  },
 ];
 
 export async function migrate(db: Db, opts: { seed?: boolean } = {}) {
