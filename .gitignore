@@ -6,3 +6,5 @@ data/*.db-*
 .env.local
 *.tsbuildinfo
 next-env.d.ts
+test-results
+playwright-report

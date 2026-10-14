@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Native/Node-only packages stay out of the bundle.
-  serverExternalPackages: ["@libsql/client", "libsql", "mammoth", "sanitize-html"],
+  serverExternalPackages: ["@libsql/client", "libsql", "mammoth"],
 };
 
 export default nextConfig;

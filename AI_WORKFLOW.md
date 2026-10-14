@@ -29,6 +29,7 @@
 | Seeding with `count = 0 → insert` | Made it idempotent (`INSERT OR IGNORE`, fixed ids) — two serverless cold starts could race and crash the second. |
 | Running schema statements one by one | Batched into one round trip; matters on a cold start against a remote DB. |
 | Yjs/CRDT real-time editing | Rejected for this timebox (needs a socket server Vercel can't host); chose version checks + 5 s polling and documented the gap. |
+| First Vercel deploy: document routes returned an empty 500 | Diagnosed by calling the API from the browser — only routes importing the HTML sanitizer failed. `sanitize-html` now pulls ESM-only dependencies that need Node ≥ 22.12; my sandbox had Node 22, Vercel defaulted lower. Pinned `engines.node` to 22.x and let Next bundle the package instead of loading it externally. Lesson: match the runtime version locally before the first deploy. |
 | E2E selector `getByRole("alert")` | Failed because Next.js injects its own route-announcer alert; scoped selectors by text. |
 
 ## How I verified correctness, UX and reliability

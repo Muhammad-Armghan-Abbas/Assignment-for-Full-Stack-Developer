@@ -30,7 +30,7 @@ To test sharing, open two browsers (or one normal + one private window) and sign
 
 ## Run locally
 
-Requires Node.js 20.9+.
+Requires Node.js 22 (22.12 or newer).
 
 ```bash
 npm install
