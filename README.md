@@ -8,7 +8,7 @@ A collaborative document editor: write with rich formatting and images, share wi
 
 ## Demo accounts
 
-Alice and Bob have profile photos; Carol shows the initials fallback.
+All three demo users have profile photos; anyone without one falls back to coloured initials.
 
 
 Sign-in is mocked: choose an account on the login page (no password). Open a second browser or a private window to be two people at once.
@@ -17,7 +17,7 @@ Sign-in is mocked: choose an account on the login page (no password). Open a sec
 |---|---|---|
 | Alice Tan | alice@ajaia.test | Owns **Welcome to Ajaia Docs** · **commenter** on Bob's Q4 Launch Plan |
 | Bob Lim | bob@ajaia.test | Owns **Q4 Launch Plan** (with a comment thread) · **editor** on Alice's welcome doc |
-| Carol Ng | carol@ajaia.test | **Viewer** on the launch plan — use her to try sharing |
+| Chris Ng | chris@ajaia.test | **Viewer** on the launch plan — use him to try sharing |
 
 ## Features
 

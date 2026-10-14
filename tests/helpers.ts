@@ -1,6 +1,6 @@
 import { createDb, migrate, type Db } from "@/lib/db";
 
-/** Fresh in-memory database with the seeded users (Alice, Bob, Carol) and welcome doc. */
+/** Fresh in-memory database with the seeded users (Alice, Bob, Chris) and welcome doc. */
 export async function testDb(): Promise<Db> {
   const db = createDb("file::memory:");
   await migrate(db);

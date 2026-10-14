@@ -10,10 +10,10 @@ export const SEED_USERS = [
   // Photos are optional: anyone without one gets coloured initials.
   { id: "u_alice", email: "alice@ajaia.test", name: "Alice Tan", color: "#1d4ed8", avatar: "/avatars/alice.jpg" },
   { id: "u_bob", email: "bob@ajaia.test", name: "Bob Lim", color: "#047857", avatar: "/avatars/bob.jpg" },
-  { id: "u_carol", email: "carol@ajaia.test", name: "Carol Ng", color: "#c2410c", avatar: null },
+  { id: "u_carol", email: "chris@ajaia.test", name: "Chris Ng", color: "#c2410c", avatar: "/avatars/chris.jpg" },
 ] as const;
 
-const SEED_REVISION = "3";
+const SEED_REVISION = "4";
 
 const WELCOME_HTML = `<h1>Welcome to Ajaia Docs</h1>
 <p>Ajaia Docs is a lightweight collaborative editor. This document is owned by <strong>Alice</strong> and shared with <strong>Bob</strong> as an editor. <mark data-color="#fde68a" style="background-color: #fde68a; color: inherit">Everything here is editable</mark> — try it.</p>
@@ -22,7 +22,7 @@ const WELCOME_HTML = `<h1>Welcome to Ajaia Docs</h1>
 <li data-type="taskItem" data-checked="true"><p>Sign in as one of the demo users</p></li>
 <li data-type="taskItem" data-checked="false"><p>Type <code>/</code> on an empty line to insert headings, tables, images and more</p></li>
 <li data-type="taskItem" data-checked="false"><p>Select some text and add a comment from the toolbar</p></li>
-<li data-type="taskItem" data-checked="false"><p>Click <strong>Share</strong> and give Carol access</p></li>
+<li data-type="taskItem" data-checked="false"><p>Click <strong>Share</strong> and give Chris access</p></li>
 <li data-type="taskItem" data-checked="false"><p>Open <strong>Version history</strong> and restore an earlier version</p></li>
 </ul>
 <h2>What each role can do</h2>
@@ -48,7 +48,7 @@ const LAUNCH_HTML = `<h1>Q4 Launch Plan</h1>
 <tr><th><p>Milestone</p></th><th><p>Date</p></th><th><p>Owner</p></th></tr>
 <tr><td><p>Pilot build</p></td><td><p>Oct 28</p></td><td><p>Bob</p></td></tr>
 <tr><td><p>Security review</p></td><td><p>Nov 8</p></td><td><p>Alice</p></td></tr>
-<tr><td><p>Pilot launch</p></td><td><p>Nov 18</p></td><td><p>Carol</p></td></tr>
+<tr><td><p>Pilot launch</p></td><td><p>Nov 18</p></td><td><p>Chris</p></td></tr>
 </tbody></table>
 <h2>Risks</h2>
 <ul>
@@ -68,7 +68,7 @@ export async function seed(db: Client) {
   for (const u of SEED_USERS) {
     stmts.push({
       sql: `INSERT INTO users (id, email, name, color, avatar_url) VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET name = excluded.name, color = excluded.color, avatar_url = excluded.avatar_url`,
+            ON CONFLICT(id) DO UPDATE SET email = excluded.email, name = excluded.name, color = excluded.color, avatar_url = excluded.avatar_url`,
       args: [u.id, u.email, u.name, u.color, u.avatar],
     });
   }

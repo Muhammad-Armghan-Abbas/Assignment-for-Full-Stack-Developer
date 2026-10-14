@@ -18,10 +18,10 @@ Use two browser windows: a normal one and a private/incognito one.
 1. **Alice:** Import `q1-pilot-report.docx`. Check the headings, table and chart, then resize the chart.
 2. Rename the document (click the title), type `/` on an empty line, and insert a **checklist** and a **table**.
 3. Select "52 weekly active writers" and click **Comment**: *"Can we break this down by team?"*
-4. Click **Share** and add **bob@ajaia.test as Commenter** and **carol@ajaia.test as Viewer**.
+4. Click **Share** and add **bob@ajaia.test as Commenter** and **chris@ajaia.test as Viewer**.
 5. **Bob** (private window): open it from **Shared with me**. You should see Alice's avatar, the yellow comment highlight, and that you can comment but not edit. **Reply** to Alice's comment.
 6. **Alice:** the reply appears within a few seconds. **Resolve** the thread, then edit a paragraph.
 7. **Alice:** open **Version history**, preview the "Imported from q1-pilot-report.docx" version, and **Restore** it. Bob's window updates on its own.
-8. **Carol:** open the document. It's view-only: no toolbar, no comment box.
+8. **Chris:** open the document. It's view-only: no toolbar, no comment box.
 9. Import `meeting-notes.md` and `release-notes.txt` and check the formatting. Try `unsupported-example.csv` to see the error.
 10. **Download** a document as Markdown or PDF from the download icon.

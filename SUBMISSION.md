@@ -14,14 +14,14 @@ Login is mocked: pick a user on the sign-in page, no password. Use a second brow
 |---|---|---|
 | Alice Tan | alice@ajaia.test | Owns "Welcome to Ajaia Docs"; **commenter** on Bob's "Q4 Launch Plan" |
 | Bob Lim | bob@ajaia.test | Owns "Q4 Launch Plan" (has a comment thread); **editor** on Alice's welcome doc |
-| Carol Ng | carol@ajaia.test | **Viewer** on the launch plan; use her to test sharing |
+| Chris Ng | chris@ajaia.test | **Viewer** on the launch plan; use him to test sharing |
 
 **Suggested 3-minute review path:**
 1. Alice: open the welcome doc. Type `/` on an empty line, then try a table, an image and a checklist.
 2. Select a sentence and comment on it.
-3. Share the doc with Carol as a commenter.
-4. In a private window, sign in as Carol. Open the doc (Alice's avatar shows she's there) and reply to the comment. Commenters can't edit the text.
-5. Back as Alice, resolve the thread, then open **Version history** and restore an earlier version. Carol's tab updates on its own.
+3. Share the doc with Chris as a commenter.
+4. In a private window, sign in as Chris. Open the doc (Alice's avatar shows she's there) and reply to the comment. Commenters can't edit the text.
+5. Back as Alice, resolve the thread, then open **Version history** and restore an earlier version. Chris's tab updates on its own.
 
 ## What's included
 

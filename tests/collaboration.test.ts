@@ -27,7 +27,7 @@ describe("commenter role", () => {
   it("can read and comment but not edit; viewers can do neither", async () => {
     const doc = await createDocument(db, ALICE, { content: "<p>Ship it in November</p>" });
     await shareDocument(db, ALICE, doc.id, { email: "bob@ajaia.test", role: "commenter" });
-    await shareDocument(db, ALICE, doc.id, { email: "carol@ajaia.test", role: "viewer" });
+    await shareDocument(db, ALICE, doc.id, { email: "chris@ajaia.test", role: "viewer" });
 
     expect((await getDocument(db, BOB, doc.id)).role).toBe("commenter");
     await expectStatus(updateDocument(db, BOB, doc.id, { content: "<p>x</p>", baseVersion: doc.version }), 403);
@@ -43,7 +43,7 @@ describe("comments", () => {
   it("threads replies, and lets the author or an editor resolve", async () => {
     const doc = await createDocument(db, ALICE, { content: "<p>Budget is 10k</p>" });
     await shareDocument(db, ALICE, doc.id, { email: "bob@ajaia.test", role: "commenter" });
-    await shareDocument(db, ALICE, doc.id, { email: "carol@ajaia.test", role: "commenter" });
+    await shareDocument(db, ALICE, doc.id, { email: "chris@ajaia.test", role: "commenter" });
 
     const [thread] = await createThread(db, BOB, doc.id, { body: "Too low?", quote: "10k" });
     let threads = await replyToThread(db, ALICE, doc.id, thread.id, { body: "Agreed, raising it." });
@@ -202,7 +202,7 @@ describe("migrations", () => {
         "CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, color TEXT NOT NULL)",
         "CREATE TABLE documents (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, title TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', version INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)",
         "CREATE TABLE document_shares (document_id TEXT NOT NULL, user_id TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('viewer', 'editor')), created_at TEXT NOT NULL, PRIMARY KEY (document_id, user_id))",
-        "INSERT INTO users VALUES ('u_alice','alice@ajaia.test','Alice','#000'), ('u_bob','bob@ajaia.test','Bob','#000'), ('u_carol','carol@ajaia.test','Carol','#000')",
+        "INSERT INTO users VALUES ('u_alice','alice@ajaia.test','Alice','#000'), ('u_bob','bob@ajaia.test','Bob','#000'), ('u_carol','chris@ajaia.test','Chris','#000')",
         "INSERT INTO documents VALUES ('old', 'u_alice', 'Old doc', '<p>kept</p>', 3, '2026-01-01', '2026-01-01')",
         "INSERT INTO document_shares VALUES ('old', 'u_bob', 'editor', '2026-01-01')",
       ],
@@ -212,11 +212,11 @@ describe("migrations", () => {
     await migrate(legacy); // idempotent
 
     expect((await getDocument(legacy, BOB, "old")).role).toBe("editor");
-    await shareDocument(legacy, ALICE, "old", { email: "carol@ajaia.test", role: "commenter" }); // new role accepted
+    await shareDocument(legacy, ALICE, "old", { email: "chris@ajaia.test", role: "commenter" }); // new role accepted
     expect((await getDocument(legacy, CAROL, "old")).role).toBe("commenter");
-    // Migration 3 + seed revision 3 add profile photos, with initials as the fallback.
+    // Migration 3 + seed revisions add profile photos (initials remain the fallback).
     expect((await getDocument(legacy, ALICE, "old")).owner.avatarUrl).toBe("/avatars/alice.jpg");
-    const shares = await shareDocument(legacy, ALICE, "old", { email: "carol@ajaia.test", role: "viewer" });
-    expect(shares.find((s) => s.userId === CAROL)?.avatarUrl).toBeNull();
+    const shares = await shareDocument(legacy, ALICE, "old", { email: "chris@ajaia.test", role: "viewer" });
+    expect(shares.find((s) => s.userId === CAROL)?.avatarUrl).toBe("/avatars/chris.jpg");
   });
 });

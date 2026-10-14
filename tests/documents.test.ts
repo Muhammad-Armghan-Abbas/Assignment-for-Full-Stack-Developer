@@ -82,11 +82,11 @@ describe("sharing and access control", () => {
   it("lets editors edit but not share or delete; viewers can only read", async () => {
     const doc = await createDocument(db, ALICE);
     await shareDocument(db, ALICE, doc.id, { email: "bob@ajaia.test", role: "editor" });
-    await shareDocument(db, ALICE, doc.id, { email: "CAROL@ajaia.test ", role: "viewer" }); // email is normalized
+    await shareDocument(db, ALICE, doc.id, { email: "CHRIS@ajaia.test ", role: "viewer" }); // email is normalized
 
     const edited = await updateDocument(db, BOB, doc.id, { content: "<p>bob was here</p>", baseVersion: doc.version });
     expect(edited.content).toBe("<p>bob was here</p>");
-    await expectStatus(shareDocument(db, BOB, doc.id, { email: "carol@ajaia.test", role: "editor" }), 403);
+    await expectStatus(shareDocument(db, BOB, doc.id, { email: "chris@ajaia.test", role: "editor" }), 403);
     await expectStatus(deleteDocument(db, BOB, doc.id), 403);
 
     expect((await getDocument(db, CAROL, doc.id)).content).toBe("<p>bob was here</p>");

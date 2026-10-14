@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Sign in" };
 const HINTS: Record<string, string> = {
   u_alice: "Owns the Welcome doc · can comment on Bob's plan",
   u_bob: "Owns the Q4 Launch Plan · edits Alice's doc",
-  u_carol: "View-only on the launch plan — try sharing with her",
+  u_carol: "View-only on the launch plan — try sharing with him",
 };
 
 export default async function LoginPage() {

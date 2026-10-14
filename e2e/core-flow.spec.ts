@@ -65,9 +65,9 @@ test("create, format, share, and view as another user", async ({ browser }) => {
   await expect(body.locator("ul li")).toHaveCount(2);
   await expect(alice.getByRole("navigation", { name: "Document outline" })).toContainText("Launch plan");
 
-  await share(alice, "carol@ajaia.test", "Viewer");
+  await share(alice, "chris@ajaia.test", "Viewer");
 
-  const carol = await signIn(browser, "Carol Ng");
+  const carol = await signIn(browser, "Chris Ng");
   const sharedSection = carol.getByRole("region", { name: "Shared with me" });
   await expect(sharedSection.getByText(title).first()).toBeVisible();
   await expect(carol.getByRole("region", { name: "My documents" }).getByText(title)).toHaveCount(0);
@@ -76,10 +76,10 @@ test("create, format, share, and view as another user", async ({ browser }) => {
   await expect(carol.getByLabel("Document content")).toHaveAttribute("contenteditable", "false");
   await expect(carol.getByRole("toolbar", { name: "Formatting" })).toHaveCount(0);
 
-  // Presence: Alice sees Carol in the document.
+  // Presence: Alice sees Chris in the document.
   await expect(alice.getByLabel(/people here/)).toBeVisible({ timeout: 12_000 });
 
-  // Alice's next edit reaches Carol without a refresh.
+  // Alice's next edit reaches Chris without a refresh.
   await body.click();
   await alice.keyboard.press("Control+End");
   await alice.keyboard.press("Enter");
@@ -119,7 +119,7 @@ test("slash commands, tables, checklists and images", async ({ browser }) => {
   expect((await bob.request.get(src!)).status()).toBe(200);
 
   // Someone without access can't fetch the image directly.
-  const carol = await signIn(browser, "Carol Ng");
+  const carol = await signIn(browser, "Chris Ng");
   expect((await carol.request.get(src!)).status()).toBe(404);
 });
 

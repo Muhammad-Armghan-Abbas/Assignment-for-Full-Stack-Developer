@@ -1,6 +1,6 @@
 # Product sync — 14 Oct
 
-**Attendees:** Alice, Bob, Carol
+**Attendees:** Alice, Bob, Chris
 **Status:** _Draft_ — please review before Friday
 
 ## Agenda
@@ -23,7 +23,7 @@
 |-----------------|--------|-------|
 | Pilot build     | 28 Oct | Bob   |
 | Security review | 8 Nov  | Alice |
-| Pilot launch    | 18 Nov | Carol |
+| Pilot launch    | 18 Nov | Chris |
 
 > "Ship the smallest thing that people can trust with real work." — Alice
 

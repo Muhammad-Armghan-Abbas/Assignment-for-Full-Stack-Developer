@@ -42,7 +42,7 @@ AI tooling can produce images too: it can generate pictures or pull stock photos
 
 | Image | Source | How it's handled |
 |---|---|---|
-| Demo user profile photos | **Real photos I supplied**, not AI-generated faces | Cropped to the face and resized from 4–7k px originals to 256 × 256 JPEG (~12 KB each) with a script. Served as static files (`public/avatars/`) and stored as `users.avatar_url` (migration 3). The `<Avatar>` component lazy-loads the photo over coloured initials, so a user without a photo (Carol) or a failed load still shows initials. |
+| Demo user profile photos | **Real photos I supplied**, not AI-generated faces | Cropped to the face and resized from 4–8k px originals (one was a 25 MB file) to 256 × 256 JPEG (~12 KB each) with a script. Served as static files (`public/avatars/`) and stored as `users.avatar_url` (migration 3). The `<Avatar>` component lazy-loads the photo over coloured initials, so a user without a photo, or a failed image load, still shows initials. |
 | Ajaia logo and wordmark | Supplied by me | Background made transparent and trimmed; the favicon is generated from the mark. |
 | Chart and diagram in `sample-files/` | Drawn programmatically (Python/PIL) from known numbers | Not AI-generated imagery, so the test data is exact and reproducible. |
 | Images users put in documents | Uploaded at runtime | Stored as access-controlled assets with magic-byte type checks; SVG refused; never hot-linked from third-party URLs. |
