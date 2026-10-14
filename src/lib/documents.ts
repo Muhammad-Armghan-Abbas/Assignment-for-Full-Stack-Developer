@@ -114,7 +114,17 @@ export async function getDocument(db: Db, userId: string, docId: string): Promis
 export async function createDocument(
   db: Db,
   userId: string,
-  input: { title?: unknown; content?: unknown; source?: string } = {},
+  input: {
+    title?: unknown;
+    content?: unknown;
+    /** Original filename when the document comes from an import. */
+    source?: string;
+    /**
+     * Optional step that runs after the row exists but before history/activity are recorded,
+     * for content that needs the new document's id (e.g. storing imported images as its assets).
+     */
+    fill?: (docId: string) => Promise<string>;
+  } = {},
 ): Promise<DocumentDetail> {
   const title = input.title === undefined ? "Untitled document" : normalizeTitle(input.title);
   const content = input.content === undefined ? "" : normalizeContent(input.content);
@@ -125,6 +135,9 @@ export async function createDocument(
           VALUES (?, ?, ?, ?, 1, ?, ?)`,
     args: [id, userId, title, content, now, now],
   });
+  if (input.fill) {
+    await db.execute({ sql: "UPDATE documents SET content = ? WHERE id = ?", args: [normalizeContent(await input.fill(id)), id] });
+  }
   const doc = await getDocument(db, userId, id);
   await recordVersion(db, doc, userId, { label: input.source ? `Imported from ${input.source}` : "Created" });
   await logActivity(db, id, userId, input.source ? "imported" : "created", input.source ? { file: input.source } : undefined);

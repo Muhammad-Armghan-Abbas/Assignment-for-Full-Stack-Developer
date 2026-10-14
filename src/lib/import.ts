@@ -2,7 +2,7 @@ import mammoth from "mammoth";
 import { marked } from "marked";
 import { storeAsset } from "./assets";
 import type { Db } from "./db";
-import { createDocument, updateDocument, type DocumentDetail } from "./documents";
+import { createDocument, type DocumentDetail } from "./documents";
 import { badRequest } from "./errors";
 import { sanitizeDocumentHtml } from "./sanitize";
 
@@ -100,15 +100,23 @@ export async function importDocument(db: Db, userId: string, filename: string, d
     return createDocument(db, userId, { title: titleFromFilename(filename), content: html, source: filename });
   }
 
-  const doc = await createDocument(db, userId, { title: titleFromFilename(filename), content: "", source: filename });
-  let finalHtml = html;
-  for (let i = 0; i < images.length; i++) {
-    try {
-      const asset = await storeAsset(db, userId, doc.id, images[i], { skipAuth: true });
-      finalHtml = finalHtml.split(`"${PLACEHOLDER}${i}"`).join(`"${asset.url}"`);
-    } catch {
-      // Unsupported formats (e.g. EMF/WMF diagrams) are dropped; the sanitizer removes the <img>.
-    }
-  }
-  return updateDocument(db, userId, doc.id, { content: finalHtml, baseVersion: doc.version });
+  // Images need the new document's id, so they are stored inside createDocument's fill step;
+  // that way the "Imported" version and activity entry capture the finished content.
+  return createDocument(db, userId, {
+    title: titleFromFilename(filename),
+    content: "",
+    source: filename,
+    fill: async (docId) => {
+      let finalHtml = html;
+      for (let i = 0; i < images.length; i++) {
+        try {
+          const asset = await storeAsset(db, userId, docId, images[i], { skipAuth: true });
+          finalHtml = finalHtml.split(`"${PLACEHOLDER}${i}"`).join(`"${asset.url}"`);
+        } catch {
+          // Unsupported formats (e.g. EMF/WMF diagrams) are dropped; the sanitizer removes the <img>.
+        }
+      }
+      return finalHtml;
+    },
+  });
 }

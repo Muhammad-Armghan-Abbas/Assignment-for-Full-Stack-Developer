@@ -107,8 +107,19 @@ export const SlashCommand = Extension.create<{ onPickImage: () => void }>({
             el.style.position = "fixed";
             el.style.zIndex = "60";
             el.style.left = `${Math.min(rect.left, window.innerWidth - 300)}px`;
-            const below = rect.bottom + 6;
-            el.style.top = below + 340 > window.innerHeight ? `${Math.max(8, rect.top - 346)}px` : `${below}px`;
+            // Open on whichever side has more room, and shrink the list to fit instead of covering the text.
+            const spaceBelow = window.innerHeight - rect.bottom - 12;
+            const spaceAbove = rect.top - 12;
+            const menu = el.firstElementChild as HTMLElement | null;
+            if (spaceBelow >= 220 || spaceBelow >= spaceAbove) {
+              el.style.top = `${rect.bottom + 6}px`;
+              el.style.bottom = "";
+              if (menu) menu.style.maxHeight = `${Math.min(340, spaceBelow)}px`;
+            } else {
+              el.style.top = "";
+              el.style.bottom = `${window.innerHeight - rect.top + 6}px`;
+              if (menu) menu.style.maxHeight = `${Math.min(340, spaceAbove)}px`;
+            }
           };
           return {
             onStart: (props) => {

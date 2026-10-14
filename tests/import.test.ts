@@ -3,6 +3,8 @@ import JSZip from "jszip";
 import { readFileSync } from "node:fs";
 import { readAsset } from "@/lib/assets";
 import { importDocument } from "@/lib/import";
+import { getVersion, listVersions } from "@/lib/versions";
+import { listActivity } from "@/lib/activity";
 import { ALICE, BOB, testDb } from "./helpers";
 import { AppError } from "@/lib/errors";
 import { convertFileToHtml, titleFromFilename } from "@/lib/import";
@@ -100,5 +102,13 @@ describe("importing a Word file with images", () => {
     const assetId = src!.split("/").pop()!;
     expect((await readAsset(db, ALICE, assetId)).mime).toBe("image/png");
     await expect(readAsset(db, BOB, assetId)).rejects.toMatchObject({ status: 404 }); // not shared with Bob
+
+    // History holds exactly one "Imported" version, and it contains the full content (restoring it must not empty the doc).
+    const versions = await listVersions(db, ALICE, doc.id);
+    expect(versions).toHaveLength(1);
+    expect(versions[0].label).toBe("Imported from Site visit.docx");
+    expect((await getVersion(db, ALICE, doc.id, versions[0].id)).content).toBe(doc.content);
+    const feed = await listActivity(db, ALICE);
+    expect(feed.filter((a) => a.document.id === doc.id).map((a) => a.type)).toEqual(["imported"]);
   });
 });
